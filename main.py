@@ -76,16 +76,14 @@ if __name__ == "__main__":
         },
     })
 
-    logging.info("args.use_cache: ", args.use_cache)
-
     if args.reset_cache:
-        if os.path.exists(".request_cache"):
-            os.system("rm -rf .request_cache")
-        if os.path.exists(".url_cache"):
-            os.system("rm -rf .url_cache")
+        if os.path.exists("request_cache"):
+            os.system("rm -rf request_cache")
+        if os.path.exists("url_cache"):
+            os.system("rm -rf url_cache")
     
-    url_cache = LocalCache(cache_dir=".url_cache", max_size=10000, ttl=3600)
-    request_cache = LocalCache(cache_dir=".request_cache", max_size=60, ttl=60)
+    url_cache = LocalCache(cache_dir="url_cache", max_size=10000, ttl=3600)
+    request_cache = LocalCache(cache_dir="request_cache", max_size=60, ttl=60)
     fetcher = Fetcher(request_cache, url_cache=url_cache)
 
     if args.hearing_url:

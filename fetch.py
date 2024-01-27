@@ -11,7 +11,7 @@ class Fetcher:
     
     def _increment_request_count(self):
         current_minute = datetime.now().replace(second=0, microsecond=0)
-        current_count = self.request_count_cache.get(str(current_minute)) or 0
+        current_count = self.request_count_cache.get(str(current_minute))[0] or 0
         new_count = current_count + 1
         self.request_count_cache.set(str(current_minute), new_count)
         # Clean up request counts that are older than 60 minutes
@@ -34,7 +34,7 @@ class Fetcher:
     def get(self, url, use_url_cache=False):
         cache_key = self.url_to_cache_key(url)
         if use_url_cache and self.url_cache:
-            cached_response = self.url_cache.get(cache_key)
+            cached_response, timestamp = self.url_cache.get(cache_key)
             if cached_response:
                 return pickle.loads(cached_response)
         self._increment_request_count()

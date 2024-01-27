@@ -37,19 +37,24 @@ class LocalCache(AbstractCache):
 
     def get(self, key: str) -> Optional[Tuple[Any, float]]:
         try:
-            with open(os.path.join(self.cache_dir, key), 'rb') as f:
+            # Adjust the file_path to handle hidden directories (starting with .)
+            file_path = os.path.join(self.cache_dir, key)
+
+            with open(file_path, 'rb') as f:
                 value, timestamp = pickle.load(f)
             if time.time() - timestamp < self.ttl:
                 return value, timestamp
             else:
                 self.remove(key)
-                return None
-        except (KeyError, FileNotFoundError):
-            return None
+                return None, None
+        except (KeyError, FileNotFoundError) as e:
+            print("Not found...", e)
+            return None, None
 
     def set(self, key: str, value: Any) -> None:
         timestamp = time.time()
-        with open(os.path.join(self.cache_dir, key), 'wb') as f:
+        file_path = os.path.join(self.cache_dir, key)
+        with open(file_path, 'wb') as f:
             pickle.dump((value, timestamp), f)
         self.cache[key] = (value, timestamp)
         if len(self.cache) > self.max_size:
@@ -59,7 +64,9 @@ class LocalCache(AbstractCache):
     def remove(self, key: str) -> None:
         try:
             del self.cache[key]
-            os.remove(os.path.join(self.cache_dir, key))
+            file_path = os.path.join(self.cache_dir, key)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
         except KeyError:
             pass
 
