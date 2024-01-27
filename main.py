@@ -12,8 +12,13 @@ from nltk.tokenize import sent_tokenize
 
 from caches import AbstractCache, LocalCache
 
+from langchain_community.document_loaders import PyPDFLoader
+
+def url_to_cache_key(url):
+    return f"{url.replace('http://', '').replace('https://', '').replace('/', '_')}.pdf"
+
 def download_pdf(url, use_cache=False):
-    cache_key = f"{url.replace('/', '_')}.pdf"
+    cache_key = url_to_cache_key(url)
     if use_cache:
         cached_content = cache.get(cache_key)
         if cached_content:
@@ -70,7 +75,8 @@ def pull_hearing_page(url, use_cache=False):
 def pull_testimony_page(url, use_cache=False):
     stream = download_pdf(url, use_cache)
     text = extract_text_from_pdf(stream)
-    print(text)
+    print("Text: ", text)
+    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Scrape a senate subcommittee testimony page.')
@@ -78,6 +84,8 @@ if __name__ == "__main__":
     parser.add_argument('-tu', '--testimony_url', type=str, help='The URL of the senate subcommittee testimony page to scrape', default=None)
     parser.add_argument('-c', '--use_cache', action='store_true', help='Use cached responses if available')
     args = parser.parse_args()
+
+    print("args.use_cache: ", args.use_cache)
     
     cache = LocalCache()
 

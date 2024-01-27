@@ -28,18 +28,19 @@ class LocalCache(AbstractCache):
 
     def get(self, key):
         try:
-            value, timestamp = self.cache[key]
+            with open(os.path.join(self.cache_dir, key), 'rb') as f:
+                value, timestamp = pickle.load(f)
             if time.time() - timestamp < self.ttl:
                 return value
             else:
                 self.remove(key)
                 return None
-        except KeyError:
+        except (KeyError, FileNotFoundError):
             return None
 
     def set(self, key, value):
-        if key in self.cache:
-            self.cache.move_to_end(key)
+        with open(os.path.join(self.cache_dir, key), 'wb') as f:
+            pickle.dump((value, time.time()), f)
         self.cache[key] = (value, time.time())
         if len(self.cache) > self.max_size:
             oldest = next(iter(self.cache))
