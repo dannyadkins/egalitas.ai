@@ -10,31 +10,7 @@ from io import BytesIO
 import nltk
 from nltk.tokenize import sent_tokenize
 
-class Cache(ABC):
-    @abstractmethod
-    def get(self, key):
-        pass
-
-    @abstractmethod
-    def set(self, key, value):
-        pass
-
-class LocalCache(Cache):
-    def __init__(self, cache_dir=".cache"):
-        self.cache_dir = cache_dir
-        if not os.path.exists(cache_dir):
-            os.makedirs(cache_dir)
-
-    def get(self, key):
-        try:
-            with open(os.path.join(self.cache_dir, key), 'rb') as cache_file:
-                return pickle.load(cache_file)
-        except FileNotFoundError:
-            return None
-
-    def set(self, key, value):
-        with open(os.path.join(self.cache_dir, key), 'wb') as cache_file:
-            pickle.dump(value, cache_file)
+from caches import AbstractCache, LocalCache
 
 def download_pdf(url, use_cache=False):
     cache_key = f"{url.replace('/', '_')}.pdf"
