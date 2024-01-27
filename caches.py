@@ -17,6 +17,14 @@ class AbstractCache(ABC):
     def remove(self, key):
         pass
 
+    @abstractmethod
+    def get_all(self):
+        pass
+
+    @abstractmethod
+    def keys(self):
+        pass
+
 class LocalCache(AbstractCache):
     def __init__(self, cache_dir=".cache", max_size=100, ttl=3600):
         self.cache_dir = cache_dir
@@ -47,5 +55,14 @@ class LocalCache(AbstractCache):
             self.remove(oldest)
 
     def remove(self, key):
-        del self.cache[key]
-        os.remove(os.path.join(self.cache_dir, key))
+        try:
+            del self.cache[key]
+            os.remove(os.path.join(self.cache_dir, key))
+        except KeyError:
+            pass
+
+    def get_all(self):
+        return list(self.cache.items())
+
+    def keys(self):
+        return list(self.cache.keys())

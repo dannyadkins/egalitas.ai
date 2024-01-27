@@ -4,32 +4,15 @@ import pickle
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
 import logging
+import logging.config
 
 import pdfplumber
 from io import BytesIO
-import nltk
-from nltk.tokenize import sent_tokenize
 
 from caches import AbstractCache, LocalCache
 
 from langchain_community.document_loaders import PyPDFLoader
 from fetch import Fetcher
-
-def url_to_cache_key(url):
-    return f"{url.replace('http://', '').replace('https://', '').replace('/', '_')}.pdf"
-
-def download_pdf(url, use_cache=False):
-    cache_key = url_to_cache_key(url)
-    if use_cache:
-        cached_content = cache.get(cache_key)
-        if cached_content:
-            return BytesIO(cached_content)
-    response = fetcher.get(url)
-    response.raise_for_status()
-    content = response.content
-    if use_cache:
-        cache.set(cache_key, content)
-    return BytesIO(content)
 
 def extract_text_from_pdf(file_stream):
     text = ""
@@ -56,40 +39,54 @@ def strip_extraneous_content(page_content):
 
 
 def pull_hearing_page(url, use_cache=False):
-    cache_key = f"{url.replace('/', '_')}.html"
-    if use_cache:
-        cached_content = cache.get(cache_key)
-        if cached_content:
-            page_content = BeautifulSoup(cached_content, 'html.parser')
-            print(strip_extraneous_content(page_content))
-            return
-    response = fetcher.get(url)
+    response = fetcher.get(url, use_cache)
     if response.status_code == 200:
         page_content = BeautifulSoup(response.text, 'html.parser')
         stripped_content = strip_extraneous_content(page_content)
-        if use_cache:
-            cache.set(cache_key, response.text)
-        print(stripped_content)
+        logging.info(stripped_content)
     else:
-        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+        logging.error(f"Failed to retrieve the page. Status code: {response.status_code}")
 
 def pull_testimony_page(url, use_cache=False):
-    stream = download_pdf(url, use_cache)
+    response = fetcher.get(url, use_cache)
+    stream = BytesIO(response.content)
     text = extract_text_from_pdf(stream)
-    print("Text: ", text)
     
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Scrape a senate subcommittee testimony page.')
     parser.add_argument('-hu', '--hearing_url', type=str, help='The URL of the senate subcommittee hearing page to scrape', default=None)
     parser.add_argument('-tu', '--testimony_url', type=str, help='The URL of the senate subcommittee testimony page to scrape', default=None)
     parser.add_argument('-c', '--use_cache', action='store_true', help='Use cached responses if available')
+    parser.add_argument('-l', '--log_level', type=str, help='Set the logging level', default='INFO')
+    parser.add_argument('-r', '--reset_cache', action='store_true', help='Reset the cache')
     args = parser.parse_args()
 
-    print("args.use_cache: ", args.use_cache)
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': args.log_level,
+            },
+        },
+        'root': {
+            'handlers': ['console'],
+            'level': args.log_level,
+        },
+    })
+
+    logging.info("args.use_cache: ", args.use_cache)
+
+    if args.reset_cache:
+        if os.path.exists(".request_cache"):
+            os.system("rm -rf .request_cache")
+        if os.path.exists(".url_cache"):
+            os.system("rm -rf .url_cache")
     
-    cache = LocalCache()
-    fetcher = Fetcher(cache)
+    url_cache = LocalCache(cache_dir=".url_cache", max_size=10000, ttl=3600)
+    request_cache = LocalCache(cache_dir=".request_cache", max_size=60, ttl=60)
+    fetcher = Fetcher(request_cache, url_cache=url_cache)
 
     if args.hearing_url:
         pull_hearing_page(args.hearing_url, args.use_cache)
