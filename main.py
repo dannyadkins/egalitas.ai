@@ -3,7 +3,7 @@ import os
 import pickle
 from abc import ABC, abstractmethod
 from bs4 import BeautifulSoup
-import requests
+import logging
 
 import pdfplumber
 from io import BytesIO
@@ -13,6 +13,7 @@ from nltk.tokenize import sent_tokenize
 from caches import AbstractCache, LocalCache
 
 from langchain_community.document_loaders import PyPDFLoader
+from fetch import Fetcher
 
 def url_to_cache_key(url):
     return f"{url.replace('http://', '').replace('https://', '').replace('/', '_')}.pdf"
@@ -23,7 +24,7 @@ def download_pdf(url, use_cache=False):
         cached_content = cache.get(cache_key)
         if cached_content:
             return BytesIO(cached_content)
-    response = requests.get(url)
+    response = fetcher.get(url)
     response.raise_for_status()
     content = response.content
     if use_cache:
@@ -62,7 +63,7 @@ def pull_hearing_page(url, use_cache=False):
             page_content = BeautifulSoup(cached_content, 'html.parser')
             print(strip_extraneous_content(page_content))
             return
-    response = requests.get(url)
+    response = fetcher.get(url)
     if response.status_code == 200:
         page_content = BeautifulSoup(response.text, 'html.parser')
         stripped_content = strip_extraneous_content(page_content)
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     print("args.use_cache: ", args.use_cache)
     
     cache = LocalCache()
+    fetcher = Fetcher(cache)
 
     if args.hearing_url:
         pull_hearing_page(args.hearing_url, args.use_cache)
