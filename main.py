@@ -1,9 +1,12 @@
 import argparse
 import logging
-
+from cache import get_redis_client, use_cache
+import requests
+from bs4 import BeautifulSoup
 # Setup argument parser to accept log level
 parser = argparse.ArgumentParser(description='Configure log level for the application.')
 parser.add_argument('-l', '--log_level', type=str, help='Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)', default='INFO')
+parser.add_argument('-i', '--invalidate', action='store_true', help='Clear cache')
 
 def run():
 
@@ -22,7 +25,15 @@ def run():
     # - This involves sequences of actions like lookups to see which entities we have already 
     # - Requires knowledge of entire schema 
 
-    pass
+    print(fetch_website_bs4('https://example.com'))
+
+@use_cache(expiration=60*60)
+def fetch_website_bs4(url: str) -> str:
+    response = requests.get(url)
+    if response.status_code == 200:
+        return BeautifulSoup(response.text, 'html.parser')
+    else:
+        raise Exception(f"Failed to fetch website with status code: {response.status_code}")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -32,6 +43,12 @@ if __name__ == "__main__":
     if not isinstance(numeric_level, int):
         raise ValueError(f'Invalid log level: {args.log_level}')
     logging.basicConfig(level=numeric_level)
+
+    # handle cache setup
+    redis_client = get_redis_client()
+    if args.invalidate:
+        logging.debug("Invalidating cache before running")
+        redis_client.flushdb()
 
     # kick off a run 
     run()

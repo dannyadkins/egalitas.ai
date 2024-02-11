@@ -2,6 +2,7 @@ import functools
 import hashlib
 import pickle
 import logging
+import argparse
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple
@@ -9,6 +10,9 @@ import os
 import pickle
 import time
 import redis
+
+# Setup argument parser to accept cache invalidation flag
+
 
 def get_redis_client():
     return redis.Redis(host='localhost', port=6379, db=0)
@@ -20,7 +24,7 @@ def test_local_redis():
 
 def use_cache(expiration=60*60):
 
-    redis_client = redis.Redis(host='localhost', port=6379, db=0)
+    redis_client = get_redis_client()
 
     def decorator(func):
         @functools.wraps(func)
