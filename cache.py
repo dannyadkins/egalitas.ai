@@ -31,16 +31,16 @@ def use_cache(expiration=60*60):
             # Try to get the cached result
             cached_result = redis_client.get(key)
             if cached_result:
-                logging.info(f"Cache hit for key: {key}")
+                logging.debug(f"Cache hit for key: {key}")
                 # If found in cache, return the cached result
                 return pickle.loads(cached_result)
             else:
-                logging.info(f"Cache miss for key: {key}")
+                logging.debug(f"Cache miss for key: {key}")
             
             # Call the function and cache the result
             result = func(*args, **kwargs)
             redis_client.setex(key, expiration, pickle.dumps(result))
-            logging.info(f"Result cached for key: {key}")
+            logging.debug(f"Result cached for key: {key}")
             return result
         return wrapper
     return decorator
