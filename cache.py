@@ -27,20 +27,20 @@ def use_cache(expiration=60*60):
         def wrapper(*args, **kwargs):
             # Create a unique key based on the function's name and arguments
             key = f"{func.__name__}:{hashlib.sha256(pickle.dumps((args, kwargs))).hexdigest()}"
-            
+            pretty_name = f"{func.__name__}({args}, {kwargs})"
             # Try to get the cached result
             cached_result = redis_client.get(key)
             if cached_result:
-                logging.debug(f"Cache hit for key: {key}")
+                logging.debug(f"Cache hit for key: {pretty_name}")
                 # If found in cache, return the cached result
                 return pickle.loads(cached_result)
             else:
-                logging.debug(f"Cache miss for key: {key}")
+                logging.debug(f"Cache miss for key: {pretty_name}")
             
             # Call the function and cache the result
             result = func(*args, **kwargs)
             redis_client.setex(key, expiration, pickle.dumps(result))
-            logging.debug(f"Result cached for key: {key}")
+            logging.debug(f"Result cached for key: {pretty_name}")
             return result
         return wrapper
     return decorator
