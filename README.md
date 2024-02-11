@@ -1,3 +1,5 @@
-Indexing every senate subcommittee testimony and video.
+### Testing locally
 
-https://www.judiciary.senate.gov/committee-activity/hearings/social-media-and-the-teen-mental-health-crisis
+Run the Redis server:
+`brew install redis`
+`redis-server`

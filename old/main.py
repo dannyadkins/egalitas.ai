@@ -51,6 +51,7 @@ def pull_testimony_page(url, use_cache=False):
     response = fetcher.get(url, use_cache)
     stream = BytesIO(response.content)
     text = extract_text_from_pdf(stream)
+    print(text)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Scrape a senate subcommittee testimony page.')
